@@ -354,6 +354,60 @@ esp_err_t esp_littlefs_info(const char* partition_label, size_t *total_bytes, si
     return ESP_OK;
 }
 
+static int diagnostics_count_block(void *context, lfs_block_t block)
+{
+    (void)block;
+    esp_littlefs_diagnostics_t *result = context;
+    ++result->block_references;
+    return 0;
+}
+
+esp_err_t esp_littlefs_diagnostics(
+    const char *partition_label,
+    esp_littlefs_diagnostics_t *result)
+{
+    if (result == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    *result = (esp_littlefs_diagnostics_t){0};
+
+    int index;
+    esp_err_t err = esp_littlefs_by_label(partition_label, &index);
+    if (err != ESP_OK) {
+        return err;
+    }
+
+    esp_littlefs_t *efs = _efs[index];
+    sem_take(efs);
+
+    if (efs->cache_size == 0) {
+        sem_give(efs);
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    struct lfs_fsinfo info = {0};
+    result->stat_error = lfs_fs_stat(efs->fs, &info);
+    if (result->stat_error == 0) {
+        result->disk_version = info.disk_version;
+        result->block_size = info.block_size;
+        result->block_count = info.block_count;
+    }
+
+    lfs_ssize_t blocks = lfs_fs_size(efs->fs);
+    if (blocks < 0) {
+        result->size_error = blocks;
+    } else {
+        result->allocated_blocks = blocks;
+    }
+
+    result->traverse_error = lfs_fs_traverse(
+        efs->fs, diagnostics_count_block, result);
+
+    sem_give(efs);
+    return ESP_OK;
+}
+
 esp_err_t esp_littlefs_partition_info(const esp_partition_t* partition, size_t *total_bytes, size_t *used_bytes){
     int index;
     esp_err_t err;

@@ -204,6 +204,22 @@ esp_err_t esp_littlefs_partition_info(const esp_partition_t* partition, size_t *
 esp_err_t esp_littlefs_sdmmc_info(sdmmc_card_t *sdcard, size_t *total_bytes, size_t *used_bytes);
 #endif
 
+typedef struct {
+    int stat_error;
+    int size_error;
+    int traverse_error;
+    uint32_t disk_version;
+    uint32_t block_size;
+    uint32_t block_count;
+    uint32_t allocated_blocks;
+    uint32_t block_references;
+} esp_littlefs_diagnostics_t;
+
+/* Read-only diagnostics. Individual LittleFS errors remain available. */
+esp_err_t esp_littlefs_diagnostics(
+    const char *partition_label,
+    esp_littlefs_diagnostics_t *result);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
