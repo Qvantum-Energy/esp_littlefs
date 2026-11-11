@@ -1,5 +1,5 @@
 version: "1.19.3"
 description: LittleFS is a small fail-safe filesystem for micro-controllers.
-url: https://github.com/malcx95/esp_littlefs
+url: https://github.com/Qvantum-Energy/esp_littlefs
 dependencies:
   idf: ">=5.0"
